@@ -11,7 +11,7 @@
         <!-- Header -->
         <header class="text-center mb-8">
             <h1 class="text-4xl font-black tracking-wider text-amber-400">CFB 138-Team League Draw</h1>
-            <p class="text-slate-400 mt-2">Phil Steele Vegas Power Ratings (Exact 138-Team Document Order)</p>
+            <p class="text-slate-400 mt-2">Phil Steele Vegas Power Ratings (Symmetrical Schedule Generator)</p>
         </header>
 
         <!-- Control Area -->
@@ -44,7 +44,7 @@
     </div>
 
     <script>
-        // Transcribed EXACTLY from the provided Phil Steele Vegas Ratings image (1 to 138)
+        // Transcribed EXACTLY from Phil Steele Vegas Ratings image (1 to 138)
         const philSteeleMaster = [
             // Pot 1 (Ranks 1–23)
             "GEORGIA", "NOTRE DAME", "OHIO ST", "ALABAMA", "TEXAS", "MIAMI (FLA)", "LSU", "INDIANA", "MISSISSIPPI", "OREGON", 
@@ -87,6 +87,12 @@
             { id: 6, name: "Pot 6 (Ranks 116–138)", teams: philSteeleMaster.slice(115, 138) }
         ];
 
+        // Helper function to find a team's actual pot number (1-6)
+        function getTeamPot(teamName) {
+            const index = philSteeleMaster.indexOf(teamName);
+            return Math.floor(index / 23) + 1;
+        }
+
         let currentSchedules = {};
 
         function displayPots() {
@@ -101,24 +107,47 @@
             `).join('');
         }
 
+        // Generate 100% reciprocal schedules (If Team A plays @Team B, Team B plays vs Team A)
         function runDraw() {
             currentSchedules = {};
+            philSteeleMaster.forEach(team => currentSchedules[team] = []);
 
-            const allTeams = potsData.flatMap(p => p.teams);
-            allTeams.forEach(team => currentSchedules[team] = []);
+            // Process each pot tier for 1 Home and 1 Away requirement
+            potsData.forEach(targetPot => {
+                let potTeams = [...targetPot.teams];
+                let unassignedHome = [...philSteeleMaster];
+                let unassignedAway = [...philSteeleMaster];
 
-            potsData.forEach(pot => {
-                const teamsInPot = [...pot.teams];
+                // Shuffle array helper
+                const shuffle = (arr) => arr.sort(() => Math.random() - 0.5);
 
-                allTeams.forEach(team => {
-                    let available = teamsInPot.filter(t => t !== team);
-                    
-                    let homeOp = available[Math.floor(Math.random() * available.length)] || "Home Opponent";
-                    currentSchedules[team].push({ opponent: homeOp, location: "Home", pot: pot.id });
+                // Assign Home games against this target pot
+                let shuffledPotHome = shuffle([...potTeams]);
+                philSteeleMaster.forEach(team => {
+                    // Filter opponents from target pot who aren't this team and haven't played them yet
+                    let validOpponents = potTeams.filter(opp => 
+                        opp !== team && 
+                        !currentSchedules[team].some(g => g.opponent === opp)
+                    );
 
-                    let awayCandidates = available.filter(t => t !== homeOp);
-                    let awayOp = awayCandidates[Math.floor(Math.random() * awayCandidates.length)] || available[0] || "Away Opponent";
-                    currentSchedules[team].push({ opponent: awayOp, location: "Away", pot: pot.id });
+                    let chosenOpponent = validOpponents[Math.floor(Math.random() * validOpponents.length)];
+                    if (!chosenOpponent) {
+                        chosenOpponent = potTeams.find(opp => opp !== team) || "Opponent";
+                    }
+
+                    // Add game to Team A (Home)
+                    currentSchedules[team].push({
+                        opponent: chosenOpponent,
+                        location: "Home",
+                        pot: getTeamPot(chosenOpponent)
+                    });
+
+                    // Reciprocally add game to Chosen Opponent (Away)
+                    currentSchedules[chosenOpponent].push({
+                        opponent: team,
+                        location: "Away",
+                        pot: getTeamPot(team)
+                    });
                 });
             });
 
@@ -133,6 +162,10 @@
 
             grid.innerHTML = teams.map(team => {
                 const games = currentSchedules[team];
+                
+                // Sort games by opponent's pot for clean display
+                games.sort((a, b) => a.pot - b.pot);
+
                 return `
                     <div class="team-card bg-slate-950 rounded-xl p-4 border border-slate-800" data-team="${team.toLowerCase()}">
                         <h4 class="font-bold text-lg text-amber-400 border-b border-slate-800 pb-1 mb-2">${team}</h4>
