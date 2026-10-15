@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CFB 24-Team Playoff & Pot Draw Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-6 font-sans">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-black tracking-wider text-amber-400">CFB 138-Team League Draw</h1>
+            <p class="text-slate-400 mt-2">Phil Steele Power Tiers & 24-Team Playoff Path Simulator</p>
+        </header>
+
+        <!-- Control Area -->
+        <div class="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8">
+            <button onclick="runDraw()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-8 py-3 rounded-xl shadow-lg transition-all transform hover:scale-105 cursor-pointer">
+                Simulate Full League Draw
+            </button>
+            <div class="w-full sm:w-72">
+                <input type="text" id="search-input" onkeyup="filterSchedules()" placeholder="Search team schedule..." class="w-full bg-slate-800 border border-slate-700 text-slate-100 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-400 placeholder-slate-500">
+            </div>
+        </div>
+
+        <!-- Pots Grid View -->
+        <h2 class="text-xl font-bold text-slate-300 mb-4">Pots (Phil Steele Tiers)</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12" id="pots-container">
+            <!-- Pots 1-6 will render here dynamically -->
+        </div>
+
+        <!-- Output Schedules -->
+        <div class="bg-slate-800 rounded-2xl p-6 shadow-xl border border-slate-700">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-emerald-400">Generated 12-Game Schedules</h2>
+                <span id="schedule-count" class="text-sm text-slate-400">0 / 138 Teams Generated</span>
+            </div>
+            
+            <div id="schedule-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto p-2">
+                <p class="text-slate-400 italic col-span-full text-center py-8">Click "Simulate Full League Draw" to calculate and display schedules for all 138 teams!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample list of FBS teams grouped across 6 Pots (23 teams per pot)
+        const potsData = [
+            { id: 1, name: "Pot 1 (Rank 1–23)", teams: ["Georgia", "Ohio State", "Texas", "Alabama", "Penn State", "Oregon", "Notre Dame", "Ole Miss", "LSU", "Tennessee", "Missouri", "Miami", "Utah", "Michigan", "Clemson", "Louisville", "Texas A&M", "USC", "Oklahoma", "Kansas State", "Iowa State", "Oklahoma State", "Arizona"] },
+            { id: 2, name: "Pot 2 (Rank 24–46)", teams: ["SMU", "Kentucky", "Auburn", "Wisconsin", "Florida", "Nebraska", "Iowa", "North Carolina", "NC State", "Virginia Tech", "UCF", "TCU", "Washington", "West Virginia", "Kansas", "Arkansas", "South Carolina", "Boise State", "Rutgers", "Maryland", "Minnesota", "Michigan State", "Memphis"] },
+            { id: 3, name: "Pot 3 (Rank 47–69)", teams: ["Tulane", "California", "Stanford", "Pittsburgh", "Syracuse", "Boston College", "Georgia Tech", "Duke", "Wake Forest", "Indiana", "Illinois", "Purdue", "Northwestern", "Baylor", "Houston", "BYU", "Texas Tech", "Washington State", "Oregon State", "Liberty", "Appalachian State", "James Madison", "UTSA"] },
+            { id: 4, name: "Pot 4 (Rank 70–92)", teams: ["Troy", "Fresno State", "UNLV", "Air Force", "Colorado", "Colorado State", "San Diego State", "San Jose State", "Boise State II", "Toledo", "Miami (OH)", "Ohio", "Bowling Green", "Northern Illinois", "Western Michigan", "Marshall", "Coastal Carolina", "Georgia Southern", "South Alabama", "Louisiana", "Texas State", "Jacksonville State", "Western Kentucky"] },
+            { id: 5, name: "Pot 5 (Rank 93–115)", teams: ["Middle Tennessee", "FIU", "Liberty II", "Sam Houston", "NM State", "UTEP", "Kennesaw State", "Buffalo", "Ball State", "Central Michigan", "Eastern Michigan", "Akron", "Kent State", "Wyoming", "Utah State", "Nevada", "New Mexico", "Hawaii", "UConn", "UMass", "Rice", "North Texas", "UAB"] },
+            { id: 6, name: "Pot 6 (Rank 116–138)", teams: ["Temple", "USF", "FAU", "Charlotte", "ECU", "Tulsa", "Navy", "Army", "Air Force II", "Louisiana Tech", "Southern Miss", "Old Dominion", "UL Monroe", "Arkansas State", "Georgia State", "Ball State II", "Kent State II", "Akron II", "Buffalo II", "UMass II", "UConn II", "FIU II", "Kennesaw II"] }
+        ];
+
+        let currentSchedules = {};
+
+        // Render Pot Cards on load
+        function displayPots() {
+            const container = document.getElementById('pots-container');
+            container.innerHTML = potsData.map(pot => `
+                <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+                    <h3 class="font-bold text-amber-400 mb-2 border-b border-slate-700 pb-2">${pot.name}</h3>
+                    <div class="text-xs text-slate-300 grid grid-cols-2 gap-1 max-h-36 overflow-y-auto">
+                        ${pot.teams.map(t => `<div class="truncate">• ${t}</div>`).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Generate 1 Home and 1 Away game from each of the 6 pots
+        function runDraw() {
+            currentSchedules = {};
+
+            // Collect all teams
+            const allTeams = potsData.flatMap(p => p.teams);
+            allTeams.forEach(team => currentSchedules[team] = []);
+
+            // For each pot, pair every team with 1 Home and 1 Away opponent from that pot
+            potsData.forEach(pot => {
+                const teamsInPot = [...pot.teams];
+
+                allTeams.forEach(team => {
+                    // Filter opponents from this pot (exclude self)
+                    let available = teamsInPot.filter(t => t !== team);
+                    
+                    // Pick 1 Home opponent
+                    let homeOp = available[Math.floor(Math.random() * available.length)] || "Opponent A";
+                    currentSchedules[team].push({ opponent: homeOp, location: "Home", pot: pot.id });
+
+                    // Pick 1 Away opponent (exclude Home opponent)
+                    let awayCandidates = available.filter(t => t !== homeOp);
+                    let awayOp = awayCandidates[Math.floor(Math.random() * awayCandidates.length)] || available[0] || "Opponent B";
+                    currentSchedules[team].push({ opponent: awayOp, location: "Away", pot: pot.id });
+                });
+            });
+
+            renderSchedules();
+        }
+
+        function renderSchedules() {
+            const grid = document.getElementById('schedule-grid');
+            const teams = Object.keys(currentSchedules);
+            
+            document.getElementById('schedule-count').innerText = `${teams.length} / 138 Teams Generated`;
+
+            grid.innerHTML = teams.map(team => {
+                const games = currentSchedules[team];
+                return `
+                    <div class="team-card bg-slate-950 rounded-xl p-4 border border-slate-800" data-team="${team.toLowerCase()}">
+                        <h4 class="font-bold text-lg text-amber-400 border-b border-slate-800 pb-1 mb-2">${team}</h4>
+                        <div class="space-y-1 text-xs">
+                            ${games.map(g => `
+                                <div class="flex justify-between items-center bg-slate-900 px-2 py-1 rounded">
+                                    <span class="${g.location === 'Home' ? 'text-emerald-400 font-semibold' : 'text-sky-400'}">${g.location === 'Home' ? 'vs' : '@'}${g.opponent}</span>
+                                    <span class="text-slate-500 text-[10px]">Pot ${g.pot}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterSchedules() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const cards = document.querySelectorAll('.team-card');
+            cards.forEach(card => {
+                const teamName = card.getAttribute('data-team');
+                card.style.display = teamName.includes(query) ? 'block' : 'none';
+            });
+        }
+
+        // Initialize UI
+        displayPots();
+    </script>
+</body>
+</html>
