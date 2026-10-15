@@ -11,7 +11,7 @@
         <!-- Header -->
         <header class="text-center mb-8">
             <h1 class="text-4xl font-black tracking-wider text-amber-400">CFB 138-Team League Draw</h1>
-            <p class="text-slate-400 mt-2">Phil Steele Power Tiers & 24-Team Playoff Path Simulator</p>
+            <p class="text-slate-400 mt-2">Phil Steele Vegas Power Ratings (Exact 138-Team Document Order)</p>
         </header>
 
         <!-- Control Area -->
@@ -25,7 +25,7 @@
         </div>
 
         <!-- Pots Grid View -->
-        <h2 class="text-xl font-bold text-slate-300 mb-4">Pots (Phil Steele Power Tiers - 138 FBS Teams)</h2>
+        <h2 class="text-xl font-bold text-slate-300 mb-4">Pots (Strictly Sequenced 1–138 from Phil Steele List)</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12" id="pots-container">
             <!-- Pots 1-6 render here dynamically -->
         </div>
@@ -44,38 +44,47 @@
     </div>
 
     <script>
-        // Strictly ordered and uniquely populated 138 FBS teams across 6 Pots (23 teams per pot)
+        // Transcribed EXACTLY from the provided Phil Steele Vegas Ratings image (1 to 138)
+        const philSteeleMaster = [
+            // Pot 1 (Ranks 1–23)
+            "GEORGIA", "NOTRE DAME", "OHIO ST", "ALABAMA", "TEXAS", "MIAMI (FLA)", "LSU", "INDIANA", "MISSISSIPPI", "OREGON", 
+            "OKLAHOMA", "FLORIDA", "MISSOURI", "UTAH", "USC", "TEXAS TECH", "TENNESSEE", "BYU", "MISS ST", "NEBRASKA", 
+            "IOWA", "HOUSTON", "KENTUCKY",
+
+            // Pot 2 (Ranks 24–46)
+            "WAKE FOREST", "UCLA", "TEXAS A&M", "MICHIGAN", "NORTHWESTERN", "AUBURN", "ARIZONA", "LOUISVILLE", "S CAROLINA", "WISCONSIN", 
+            "SMU", "BAYLOR", "OKLAHOMA ST", "BOISE ST", "PENN ST", "KANSAS ST", "TCU", "DUKE", "VIRGINIA TECH", "FLORIDA ST", 
+            "PITTSBURGH", "N CAROLINA", "CLEMSON",
+
+            // Pot 3 (Ranks 47–69)
+            "VIRGINIA", "MINNESOTA", "NEW MEXICO", "OREGON ST", "ARIZONA ST", "WASHINGTON", "VANDERBILT", "UCF", "ILLINOIS", "CINCINNATI", 
+            "NC STATE", "PURDUE", "IOWA ST", "KANSAS", "James Madison", "W VIRGINIA", "GEORGIA TECH", "MEMPHIS", "North Dakota St", "N TEXAS", 
+            "ARKANSAS", "UTSA", "COLORADO",
+
+            // Pot 4 (Ranks 70–92)
+            "CALIFORNIA", "MICHIGAN ST", "FRESNO ST", "TEXAS ST", "MARYLAND", "UNLV", "SYRACUSE", "LIBERTY", "RUTGERS", "BOSTON COLLEGE", 
+            "ARMY", "GEORGIA SOUTHERN", "USF", "FLORIDA ATLANTIC", "NAVY", "GEORGIA ST", "E CAROLINA", "TULSA", "LOUISIANA", "LA TECH", 
+            "W MICHIGAN", "TULANE", "CONNECTICUT",
+
+            // Pot 5 (Ranks 93–115)
+            "AIR FORCE", "TOLEDO", "TEMPLE", "APPALACHIAN ST", "STANFORD", "SOUTH ALABAMA", "UTAH ST", "TROY", "WASHINGTON ST", "ARKANSAS ST", 
+            "FLORIDA INT", "JACKSONVILLE ST", "OLD DOMINION", "OHIO", "COLORADO ST", "MIAMI (OH)", "UAB", "NEVADA", "SAN DIEGO ST", "SAN JOSE ST", 
+            "HAWAII", "RICE", "WYOMING",
+
+            // Pot 6 (Ranks 116–138)
+            "W KENTUCKY", "Kennesaw St", "N MEXICO ST", "E MICHIGAN", "MARSHALL", "C MICHIGAN", "COASTAL CAROLINA", "MIDDLE TENN", "Delaware", "Sam Houston", 
+            "BOWLING GREEN", "BUFFALO", "S MISS", "Missouri St", "MASSACHUSETTS", "KENT", "N ILLINOIS", "BALL ST", "AKRON", "ULM", 
+            "UTEP", "CHARLOTTE", "Sacramento St"
+        ];
+
+        // Slice master array into 6 pots of 23 teams
         const potsData = [
-            { 
-                id: 1, 
-                name: "Pot 1 (Teams 1–23)", 
-                teams: ["Ohio State", "Georgia", "Texas", "Notre Dame", "Indiana", "Miami (FL)", "LSU", "Alabama", "Oregon", "Tennessee", "Ole Miss", "Florida", "USC", "Mississippi State", "Texas A&M", "Oklahoma", "Utah", "Michigan", "Texas Tech", "Penn State", "BYU", "South Carolina", "Missouri"] 
-            },
-            { 
-                id: 2, 
-                name: "Pot 2 (Teams 24–46)", 
-                teams: ["Iowa", "Louisville", "SMU", "Kentucky", "Auburn", "Wisconsin", "Nebraska", "North Carolina", "NC State", "Virginia Tech", "UCF", "TCU", "Washington", "West Virginia", "Kansas", "Arkansas", "Boise State", "Rutgers", "Maryland", "Minnesota", "Michigan State", "Memphis", "Tulane"] 
-            },
-            { 
-                id: 3, 
-                name: "Pot 3 (Teams 47–69)", 
-                teams: ["California", "Stanford", "Pittsburgh", "Syracuse", "Boston College", "Georgia Tech", "Duke", "Wake Forest", "Illinois", "Purdue", "Northwestern", "Baylor", "Houston", "Washington State", "Oregon State", "Liberty", "Appalachian State", "James Madison", "UTSA", "Troy", "Fresno State", "UNLV", "Air Force"] 
-            },
-            { 
-                id: 4, 
-                name: "Pot 4 (Teams 70–92)", 
-                teams: ["Colorado", "Colorado State", "San Diego State", "San Jose State", "Toledo", "Miami (OH)", "Ohio", "Bowling Green", "Northern Illinois", "Western Michigan", "Marshall", "Coastal Carolina", "Georgia Southern", "South Alabama", "Louisiana", "Texas State", "Jacksonville State", "Western Kentucky", "Middle Tennessee", "FIU", "Sam Houston", "New Mexico State", "UTEP"] 
-            },
-            { 
-                id: 5, 
-                name: "Pot 5 (Teams 93–115)", 
-                teams: ["Kennesaw State", "Buffalo", "Ball State", "Central Michigan", "Eastern Michigan", "Akron", "Kent State", "Wyoming", "Utah State", "Nevada", "New Mexico", "Hawaii", "UConn", "UMass", "Rice", "North Texas", "UAB", "Temple", "USF", "FAU", "Charlotte", "East Carolina", "Tulsa"] 
-            },
-            { 
-                id: 6, 
-                name: "Pot 6 (Teams 116–138)", 
-                teams: ["Navy", "Army", "Louisiana Tech", "Southern Miss", "Old Dominion", "UL Monroe", "Arkansas State", "Georgia State", "Vanderbilt", "UCLA", "Virginia", "Texas El Paso", "Sam Houston State", "Delaware", "Missouri State", "Tarleton State", "Central Arkansas", "Abilene Christian", "Montana", "Montana State", "North Dakota State", "South Dakota State", "Villanova"] 
-            }
+            { id: 1, name: "Pot 1 (Ranks 1–23)", teams: philSteeleMaster.slice(0, 23) },
+            { id: 2, name: "Pot 2 (Ranks 24–46)", teams: philSteeleMaster.slice(23, 46) },
+            { id: 3, name: "Pot 3 (Ranks 47–69)", teams: philSteeleMaster.slice(46, 69) },
+            { id: 4, name: "Pot 4 (Ranks 70–92)", teams: philSteeleMaster.slice(69, 92) },
+            { id: 5, name: "Pot 5 (Ranks 93–115)", teams: philSteeleMaster.slice(92, 115) },
+            { id: 6, name: "Pot 6 (Ranks 116–138)", teams: philSteeleMaster.slice(115, 138) }
         ];
 
         let currentSchedules = {};
@@ -86,7 +95,7 @@
                 <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
                     <h3 class="font-bold text-amber-400 mb-2 border-b border-slate-700 pb-2">${pot.name}</h3>
                     <div class="text-xs text-slate-300 grid grid-cols-2 gap-1 max-h-36 overflow-y-auto">
-                        ${pot.teams.map(t => `<div class="truncate">• ${t}</div>`).join('')}
+                        ${pot.teams.map((t, idx) => `<div class="truncate">• ${(pot.id - 1) * 23 + idx + 1}.${t}</div>`).join('')}
                     </div>
                 </div>
             `).join('');
@@ -104,11 +113,11 @@
                 allTeams.forEach(team => {
                     let available = teamsInPot.filter(t => t !== team);
                     
-                    let homeOp = available[Math.floor(Math.random() * available.length)] || "TBD Home";
+                    let homeOp = available[Math.floor(Math.random() * available.length)] || "Home Opponent";
                     currentSchedules[team].push({ opponent: homeOp, location: "Home", pot: pot.id });
 
                     let awayCandidates = available.filter(t => t !== homeOp);
-                    let awayOp = awayCandidates[Math.floor(Math.random() * awayCandidates.length)] || available[0] || "TBD Away";
+                    let awayOp = awayCandidates[Math.floor(Math.random() * awayCandidates.length)] || available[0] || "Away Opponent";
                     currentSchedules[team].push({ opponent: awayOp, location: "Away", pot: pot.id });
                 });
             });
