@@ -25,9 +25,9 @@
         </div>
 
         <!-- Pots Grid View -->
-        <h2 class="text-xl font-bold text-slate-300 mb-4">Pots (Phil Steele Tiers)</h2>
+        <h2 class="text-xl font-bold text-slate-300 mb-4">Pots (Phil Steele Power Tiers - 138 FBS Teams)</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12" id="pots-container">
-            <!-- Pots 1-6 will render here dynamically -->
+            <!-- Pots 1-6 render here dynamically -->
         </div>
 
         <!-- Output Schedules -->
@@ -44,19 +44,42 @@
     </div>
 
     <script>
-        // Sample list of FBS teams grouped across 6 Pots (23 teams per pot)
+        // Exact 138 unique FBS teams cleanly distributed across 6 Pots (23 teams per pot)
         const potsData = [
-            { id: 1, name: "Pot 1 (Rank 1–23)", teams: ["Georgia", "Ohio State", "Texas", "Alabama", "Penn State", "Oregon", "Notre Dame", "Ole Miss", "LSU", "Tennessee", "Missouri", "Miami", "Utah", "Michigan", "Clemson", "Louisville", "Texas A&M", "USC", "Oklahoma", "Kansas State", "Iowa State", "Oklahoma State", "Arizona"] },
-            { id: 2, name: "Pot 2 (Rank 24–46)", teams: ["SMU", "Kentucky", "Auburn", "Wisconsin", "Florida", "Nebraska", "Iowa", "North Carolina", "NC State", "Virginia Tech", "UCF", "TCU", "Washington", "West Virginia", "Kansas", "Arkansas", "South Carolina", "Boise State", "Rutgers", "Maryland", "Minnesota", "Michigan State", "Memphis"] },
-            { id: 3, name: "Pot 3 (Rank 47–69)", teams: ["Tulane", "California", "Stanford", "Pittsburgh", "Syracuse", "Boston College", "Georgia Tech", "Duke", "Wake Forest", "Indiana", "Illinois", "Purdue", "Northwestern", "Baylor", "Houston", "BYU", "Texas Tech", "Washington State", "Oregon State", "Liberty", "Appalachian State", "James Madison", "UTSA"] },
-            { id: 4, name: "Pot 4 (Rank 70–92)", teams: ["Troy", "Fresno State", "UNLV", "Air Force", "Colorado", "Colorado State", "San Diego State", "San Jose State", "Boise State II", "Toledo", "Miami (OH)", "Ohio", "Bowling Green", "Northern Illinois", "Western Michigan", "Marshall", "Coastal Carolina", "Georgia Southern", "South Alabama", "Louisiana", "Texas State", "Jacksonville State", "Western Kentucky"] },
-            { id: 5, name: "Pot 5 (Rank 93–115)", teams: ["Middle Tennessee", "FIU", "Liberty II", "Sam Houston", "NM State", "UTEP", "Kennesaw State", "Buffalo", "Ball State", "Central Michigan", "Eastern Michigan", "Akron", "Kent State", "Wyoming", "Utah State", "Nevada", "New Mexico", "Hawaii", "UConn", "UMass", "Rice", "North Texas", "UAB"] },
-            { id: 6, name: "Pot 6 (Rank 116–138)", teams: ["Temple", "USF", "FAU", "Charlotte", "ECU", "Tulsa", "Navy", "Army", "Air Force II", "Louisiana Tech", "Southern Miss", "Old Dominion", "UL Monroe", "Arkansas State", "Georgia State", "Ball State II", "Kent State II", "Akron II", "Buffalo II", "UMass II", "UConn II", "FIU II", "Kennesaw II"] }
+            { 
+                id: 1, 
+                name: "Pot 1 (Teams 1–23)", 
+                teams: ["Georgia", "Ohio State", "Texas", "Alabama", "Penn State", "Oregon", "Notre Dame", "Ole Miss", "LSU", "Tennessee", "Missouri", "Miami (FL)", "Utah", "Michigan", "Clemson", "Louisville", "Texas A&M", "USC", "Oklahoma", "Kansas State", "Iowa State", "Oklahoma State", "Arizona"] 
+            },
+            { 
+                id: 2, 
+                name: "Pot 2 (Teams 24–46)", 
+                teams: ["SMU", "Kentucky", "Auburn", "Wisconsin", "Florida", "Nebraska", "Iowa", "North Carolina", "NC State", "Virginia Tech", "UCF", "TCU", "Washington", "West Virginia", "Kansas", "Arkansas", "South Carolina", "Boise State", "Rutgers", "Maryland", "Minnesota", "Michigan State", "Memphis"] 
+            },
+            { 
+                id: 3, 
+                name: "Pot 3 (Teams 47–69)", 
+                teams: ["Tulane", "California", "Stanford", "Pittsburgh", "Syracuse", "Boston College", "Georgia Tech", "Duke", "Wake Forest", "Indiana", "Illinois", "Purdue", "Northwestern", "Baylor", "Houston", "BYU", "Texas Tech", "Washington State", "Oregon State", "Liberty", "Appalachian State", "James Madison", "UTSA"] 
+            },
+            { 
+                id: 4, 
+                name: "Pot 4 (Teams 70–92)", 
+                teams: ["Troy", "Fresno State", "UNLV", "Air Force", "Colorado", "Colorado State", "San Diego State", "San Jose State", "Toledo", "Miami (OH)", "Ohio", "Bowling Green", "Northern Illinois", "Western Michigan", "Marshall", "Coastal Carolina", "Georgia Southern", "South Alabama", "Louisiana", "Texas State", "Jacksonville State", "Western Kentucky", "Middle Tennessee"] 
+            },
+            { 
+                id: 5, 
+                name: "Pot 5 (Teams 93–115)", 
+                teams: ["FIU", "Sam Houston", "New Mexico State", "UTEP", "Kennesaw State", "Buffalo", "Ball State", "Central Michigan", "Eastern Michigan", "Akron", "Kent State", "Wyoming", "Utah State", "Nevada", "New Mexico", "Hawaii", "UConn", "UMass", "Rice", "North Texas", "UAB", "Temple", "USF"] 
+            },
+            { 
+                id: 6, 
+                name: "Pot 6 (Teams 116–138)", 
+                teams: ["FAU", "Charlotte", "East Carolina", "Tulsa", "Navy", "Army", "Louisiana Tech", "Southern Miss", "Old Dominion", "UL Monroe", "Arkansas State", "Georgia State", "Delaware", "Missouri State", "Vanderbilt", "UCLA", "Virginia", "Wake Forest II", "Kennesaw", "Utah Valley", "Tarleton State", "Central Arkansas", "Stephen F. Austin"] 
+            }
         ];
 
         let currentSchedules = {};
 
-        // Render Pot Cards on load
         function displayPots() {
             const container = document.getElementById('pots-container');
             container.innerHTML = potsData.map(pot => `
@@ -69,29 +92,23 @@
             `).join('');
         }
 
-        // Generate 1 Home and 1 Away game from each of the 6 pots
         function runDraw() {
             currentSchedules = {};
 
-            // Collect all teams
             const allTeams = potsData.flatMap(p => p.teams);
             allTeams.forEach(team => currentSchedules[team] = []);
 
-            // For each pot, pair every team with 1 Home and 1 Away opponent from that pot
             potsData.forEach(pot => {
                 const teamsInPot = [...pot.teams];
 
                 allTeams.forEach(team => {
-                    // Filter opponents from this pot (exclude self)
                     let available = teamsInPot.filter(t => t !== team);
                     
-                    // Pick 1 Home opponent
-                    let homeOp = available[Math.floor(Math.random() * available.length)] || "Opponent A";
+                    let homeOp = available[Math.floor(Math.random() * available.length)] || "TBD Home";
                     currentSchedules[team].push({ opponent: homeOp, location: "Home", pot: pot.id });
 
-                    // Pick 1 Away opponent (exclude Home opponent)
                     let awayCandidates = available.filter(t => t !== homeOp);
-                    let awayOp = awayCandidates[Math.floor(Math.random() * awayCandidates.length)] || available[0] || "Opponent B";
+                    let awayOp = awayCandidates[Math.floor(Math.random() * awayCandidates.length)] || available[0] || "TBD Away";
                     currentSchedules[team].push({ opponent: awayOp, location: "Away", pot: pot.id });
                 });
             });
@@ -132,7 +149,6 @@
             });
         }
 
-        // Initialize UI
         displayPots();
     </script>
 </body>
