@@ -11,7 +11,7 @@
         <!-- Header -->
         <header class="text-center mb-8">
             <h1 class="text-4xl font-black tracking-wider text-amber-400">CFB 138-Team League Draw</h1>
-            <p class="text-slate-400 mt-2">Phil Steele Vegas Power Ratings (Strict 12-Game Balanced Swiss Draw)</p>
+            <p class="text-slate-400 mt-2">Phil Steele Vegas Power Ratings (Unique 12 Opponent Guarantee)</p>
         </header>
 
         <!-- Control Area -->
@@ -87,11 +87,6 @@
             { id: 6, name: "Pot 6 (Ranks 116–138)", teams: philSteeleMaster.slice(115, 138) }
         ];
 
-        function getTeamPot(teamName) {
-            const index = philSteeleMaster.indexOf(teamName);
-            return Math.floor(index / 23) + 1;
-        }
-
         function shuffle(array) {
             let arr = [...array];
             for (let i = arr.length - 1; i > 0; i--) {
@@ -101,7 +96,7 @@
             return arr;
         }
 
-        // Generate derangement (no self-matching)
+        // Generate derangement (no element matches reference array at same index)
         function getDerangement(arr) {
             let shuffled = shuffle(arr);
             while (shuffled.some((val, idx) => val === arr[idx])) {
@@ -128,7 +123,7 @@
             currentSchedules = {};
             philSteeleMaster.forEach(team => currentSchedules[team] = []);
 
-            // 1. Intra-pot matchups (Teams play 1 Home & 1 Away within their own pot)
+            // 1. Intra-pot matchups (Same Pot: 1 Home & 1 Away, strictly unique)
             potsData.forEach(pot => {
                 const teams = pot.teams;
                 const homeDerangement = getDerangement(teams);
@@ -136,14 +131,12 @@
                 teams.forEach((team, idx) => {
                     const homeOpponent = homeDerangement[idx];
                     
-                    // Add Home game
                     currentSchedules[team].push({
                         opponent: homeOpponent,
                         location: "Home",
                         pot: pot.id
                     });
 
-                    // Reciprocal Away game for homeOpponent
                     currentSchedules[homeOpponent].push({
                         opponent: team,
                         location: "Away",
@@ -152,45 +145,44 @@
                 });
             });
 
-            // 2. Inter-pot matchups (Pot X vs Pot Y)
+            // 2. Inter-pot matchups (Pot X vs Pot Y: Guaranteeing 2 different opponents)
             for (let p1 = 0; p1 < 6; p1++) {
                 for (let p2 = p1 + 1; p2 < 6; p2++) {
                     const pot1Teams = potsData[p1].teams;
                     const pot2Teams = potsData[p2].teams;
 
-                    // Matchup A: Pot 1 host Pot 2
-                    const pot2Visitors = shuffle(pot2Teams);
-                    pot1Teams.forEach((teamP1, idx) => {
-                        const visitorP2 = pot2Visitors[idx];
+                    // Matchup A: Pot 1 hosts Pot 2
+                    const pot2VisitorsA = shuffle(pot2Teams);
 
+                    // Matchup B: Pot 2 hosts Pot 1 (Visitor list B MUST be a derangement of Visitor list A)
+                    const pot2VisitorsB = getDerangement(pot2VisitorsA);
+
+                    pot1Teams.forEach((teamP1, idx) => {
+                        const homeOpponent = pot2VisitorsA[idx]; // P1 hosts this P2 team
+                        const awayOpponent = pot2VisitorsB[idx]; // P1 travels to this DIFFERENT P2 team
+
+                        // P1's Home game vs P2
                         currentSchedules[teamP1].push({
-                            opponent: visitorP2,
+                            opponent: homeOpponent,
                             location: "Home",
                             pot: p2 + 1
                         });
-
-                        currentSchedules[visitorP2].push({
+                        currentSchedules[homeOpponent].push({
                             opponent: teamP1,
                             location: "Away",
                             pot: p1 + 1
                         });
-                    });
 
-                    // Matchup B: Pot 2 host Pot 1
-                    const pot1Visitors = shuffle(pot1Teams);
-                    pot2Teams.forEach((teamP2, idx) => {
-                        const visitorP1 = pot1Visitors[idx];
-
-                        currentSchedules[teamP2].push({
-                            opponent: visitorP1,
-                            location: "Home",
-                            pot: p1 + 1
-                        });
-
-                        currentSchedules[visitorP1].push({
-                            opponent: teamP2,
+                        // P1's Away game @ P2
+                        currentSchedules[teamP1].push({
+                            opponent: awayOpponent,
                             location: "Away",
                             pot: p2 + 1
+                        });
+                        currentSchedules[awayOpponent].push({
+                            opponent: teamP1,
+                            location: "Home",
+                            pot: p1 + 1
                         });
                     });
                 }
@@ -215,7 +207,7 @@
                     <div class="team-card bg-slate-950 rounded-xl p-4 border border-slate-800" data-team="${team.toLowerCase()}">
                         <div class="flex justify-between items-center border-b border-slate-800 pb-1 mb-2">
                             <h4 class="font-bold text-lg text-amber-400">${team}</h4>
-                            <span class="text-xs bg-slate-800 text-emerald-400 px-2 py-0.5 rounded font-mono">${games.length} Games</span>
+                            <span class="text-xs bg-slate-800 text-emerald-400 px-2 py-0.5 rounded font-mono">${games.length} Unique Games</span>
                         </div>
                         <div class="space-y-1 text-xs">
                             ${games.map(g => `
