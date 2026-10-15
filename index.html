@@ -11,7 +11,7 @@
         <!-- Header -->
         <header class="text-center mb-8">
             <h1 class="text-4xl font-black tracking-wider text-amber-400">CFB 138-Team League Draw</h1>
-            <p class="text-slate-400 mt-2">Phil Steele Vegas Power Ratings (Guaranteed Unique 12-Game Swiss Draw)</p>
+            <p class="text-slate-400 mt-2">Phil Steele Vegas Power Ratings (100% Synchronized Symmetrical Swiss Draw)</p>
         </header>
 
         <!-- Control Area -->
@@ -87,21 +87,9 @@
             { id: 6, name: "Pot 6 (Ranks 116–138)", teams: philSteeleMaster.slice(115, 138) }
         ];
 
-        function shuffle(array) {
-            let arr = [...array];
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
-        }
-
-        function getDerangement(arr) {
-            let shuffled = shuffle(arr);
-            while (shuffled.some((val, idx) => val === arr[idx])) {
-                shuffled = shuffle(arr);
-            }
-            return shuffled;
+        function getTeamPot(teamName) {
+            const index = philSteeleMaster.indexOf(teamName);
+            return Math.floor(index / 23) + 1;
         }
 
         let currentSchedules = {};
@@ -122,76 +110,51 @@
             currentSchedules = {};
             philSteeleMaster.forEach(team => currentSchedules[team] = []);
 
-            // 1. Intra-pot matchups (Same Pot: Cyclic shift to strictly avoid playing the same team Home and Away)
+            // Bilateral game adder: automatically pushes Home to teamA and Away to teamB
+            function addBilateralGame(teamHome, teamAway, potNum) {
+                if (teamHome === teamAway) return;
+                currentSchedules[teamHome].push({ opponent: teamAway, location: "Home", pot: potNum });
+                currentSchedules[teamAway].push({ opponent: teamHome, location: "Away", pot: getTeamPot(teamHome) });
+            }
+
+            // 1. Intra-pot matchups (Cyclic shift guarantees 1 Home and 1 Away per team with zero self-play)
             potsData.forEach(pot => {
-                const teams = shuffle(pot.teams);
+                const teams = pot.teams;
                 const n = teams.length; // 23
-                
-                // Pick random offsets k1 (Home) and k2 (Away) such that k1 != k2 and k1, k2 != 0
-                const k1 = Math.floor(Math.random() * (n - 2)) + 1; // e.g. 1 to 21
-                let k2 = Math.floor(Math.random() * (n - 2)) + 1;
-                while (k2 === k1) {
-                    k2 = Math.floor(Math.random() * (n - 2)) + 1;
+                const k1 = 1;
+                const k2 = 8;
+
+                for (let i = 0; i < n; i++) {
+                    const homeTeam = teams[i];
+                    const awayTeam1 = teams[(i + k1) % n];
+                    const awayTeam2 = teams[(i + k2) % n];
+
+                    addBilateralGame(homeTeam, awayTeam1, pot.id);
+                    addBilateralGame(homeTeam, awayTeam2, pot.id);
                 }
-
-                teams.forEach((team, i) => {
-                    const homeOpponent = teams[(i + k1) % n];
-                    const awayOpponent = teams[(i + k2) % n];
-
-                    currentSchedules[team].push({
-                        opponent: homeOpponent,
-                        location: "Home",
-                        pot: pot.id
-                    });
-
-                    currentSchedules[team].push({
-                        opponent: awayOpponent,
-                        location: "Away",
-                        pot: pot.id
-                    });
-                });
             });
 
-            // 2. Inter-pot matchups (Pot X vs Pot Y: Guaranteeing 2 different opponents)
+            // 2. Inter-pot matchups (Pot A vs Pot B: Bilateral offset shifts)
             for (let p1 = 0; p1 < 6; p1++) {
                 for (let p2 = p1 + 1; p2 < 6; p2++) {
-                    const pot1Teams = potsData[p1].teams;
-                    const pot2Teams = potsData[p2].teams;
+                    const potATeams = potsData[p1].teams;
+                    const potBTeams = potsData[p2].teams;
+                    const n = 23;
+                    
+                    const k1 = 3;
+                    const k2 = 9;
 
-                    // Matchup A: Pot 1 hosts Pot 2
-                    const pot2VisitorsA = shuffle(pot2Teams);
+                    for (let i = 0; i < n; i++) {
+                        // Shift 1: Pot A hosts Pot B
+                        const teamA1 = potATeams[i];
+                        const teamB1 = potBTeams[(i + k1) % n];
+                        addBilateralGame(teamA1, teamB1, potsData[p2].id);
 
-                    // Matchup B: Pot 2 hosts Pot 1 (Visitor list B MUST be a derangement of Visitor list A)
-                    const pot2VisitorsB = getDerangement(pot2VisitorsA);
-
-                    pot1Teams.forEach((teamP1, idx) => {
-                        const homeOpponent = pot2VisitorsA[idx]; // P1 hosts this P2 team
-                        const awayOpponent = pot2VisitorsB[idx]; // P1 travels to this DIFFERENT P2 team
-
-                        // P1's Home game vs P2
-                        currentSchedules[teamP1].push({
-                            opponent: homeOpponent,
-                            location: "Home",
-                            pot: p2 + 1
-                        });
-                        currentSchedules[homeOpponent].push({
-                            opponent: teamP1,
-                            location: "Away",
-                            pot: p1 + 1
-                        });
-
-                        // P1's Away game @ P2
-                        currentSchedules[teamP1].push({
-                            opponent: awayOpponent,
-                            location: "Away",
-                            pot: p2 + 1
-                        });
-                        currentSchedules[awayOpponent].push({
-                            opponent: teamP1,
-                            location: "Home",
-                            pot: p1 + 1
-                        });
-                    });
+                        // Shift 2: Pot B hosts Pot A
+                        const teamA2 = potATeams[i];
+                        const teamB2 = potBTeams[(i + k2) % n];
+                        addBilateralGame(teamB2, teamA2, potsData[p1].id);
+                    }
                 }
             }
 
@@ -214,7 +177,7 @@
                     <div class="team-card bg-slate-950 rounded-xl p-4 border border-slate-800" data-team="${team.toLowerCase()}">
                         <div class="flex justify-between items-center border-b border-slate-800 pb-1 mb-2">
                             <h4 class="font-bold text-lg text-amber-400">${team}</h4>
-                            <span class="text-xs bg-slate-800 text-emerald-400 px-2 py-0.5 rounded font-mono">${games.length} Unique Games</span>
+                            <span class="text-xs bg-slate-800 text-emerald-400 px-2 py-0.5 rounded font-mono">${games.length} Games</span>
                         </div>
                         <div class="space-y-1 text-xs">
                             ${games.map(g => `
