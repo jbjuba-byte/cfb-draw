@@ -11,7 +11,7 @@
         <!-- Header -->
         <header class="text-center mb-8">
             <h1 class="text-4xl font-black tracking-wider text-amber-400">CFB 138-Team League Draw</h1>
-            <p class="text-slate-400 mt-2">Phil Steele Vegas Power Ratings (Unique 12 Opponent Guarantee)</p>
+            <p class="text-slate-400 mt-2">Phil Steele Vegas Power Ratings (Guaranteed Unique 12-Game Swiss Draw)</p>
         </header>
 
         <!-- Control Area -->
@@ -96,7 +96,6 @@
             return arr;
         }
 
-        // Generate derangement (no element matches reference array at same index)
         function getDerangement(arr) {
             let shuffled = shuffle(arr);
             while (shuffled.some((val, idx) => val === arr[idx])) {
@@ -123,22 +122,30 @@
             currentSchedules = {};
             philSteeleMaster.forEach(team => currentSchedules[team] = []);
 
-            // 1. Intra-pot matchups (Same Pot: 1 Home & 1 Away, strictly unique)
+            // 1. Intra-pot matchups (Same Pot: Cyclic shift to strictly avoid playing the same team Home and Away)
             potsData.forEach(pot => {
-                const teams = pot.teams;
-                const homeDerangement = getDerangement(teams);
+                const teams = shuffle(pot.teams);
+                const n = teams.length; // 23
                 
-                teams.forEach((team, idx) => {
-                    const homeOpponent = homeDerangement[idx];
-                    
+                // Pick random offsets k1 (Home) and k2 (Away) such that k1 != k2 and k1, k2 != 0
+                const k1 = Math.floor(Math.random() * (n - 2)) + 1; // e.g. 1 to 21
+                let k2 = Math.floor(Math.random() * (n - 2)) + 1;
+                while (k2 === k1) {
+                    k2 = Math.floor(Math.random() * (n - 2)) + 1;
+                }
+
+                teams.forEach((team, i) => {
+                    const homeOpponent = teams[(i + k1) % n];
+                    const awayOpponent = teams[(i + k2) % n];
+
                     currentSchedules[team].push({
                         opponent: homeOpponent,
                         location: "Home",
                         pot: pot.id
                     });
 
-                    currentSchedules[homeOpponent].push({
-                        opponent: team,
+                    currentSchedules[team].push({
+                        opponent: awayOpponent,
                         location: "Away",
                         pot: pot.id
                     });
